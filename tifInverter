@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <iostream>
+#include <tiffio.h>
+
+/* Found this on a blog and it seemed useful for my particular problem, maybe I can use it somewhere?
+#define TIFFSetR(pixel, x) ((unsigned char *)pixel)[0] = x
+#define TIFFSetG(pixel, x) ((unsigned char *)pixel)[1] = x
+#define TIFFSetB(pixel, x) ((unsigned char *)pixel)[2] = x
+#define TIFFSetA(pixel, x) ((unsigned char *)pixel)[3] = x
+*/
+
+using namespace std;
+
+int main()
+{
+    //Get image path
+    const char * imagePath;
+    imagePath = "C:/images/002222-012515185003-Cam1.tif";
+
+    TIFF *tif = TIFFOpen(imagePath, "r");
+
+    //Get image width, height and other important info
+    uint32 width, height, samplesPerPixel, bitsPerSample, photometricSetting;
+    uint32* raster;
+    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+    TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+    TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+    TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+    TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometricSetting);
+
+    //Calculate total number of pixels
+    uint32 npixels = width*height;
+    raster = (uint32 *)_TIFFmalloc(npixels *sizeof(uint32));
+
+    //Read image data and store information into an array
+    //TIFFReadRGBAImage(tif, width, height, raster, 0);   // Had this originally
+    TIFFReadRGBAImageOriented(tif, width, height, raster, ORIENTATION_BOTLEFT, 0);
+
+    uint32 e, c, red, green, blue, alpha;
+    red = 0, green = 0, blue = 0, alpha = 0;
+
+    //Add color values together for average calculation
+    for (e = height - 1; e != -1; e--)
+    {
+        for (c = 0; c < width; c++)
+        {
+            red = red + TIFFGetR(raster[c]);
+            green = green + TIFFGetG(raster[c]);
+            blue = blue + TIFFGetB(raster[c]);
+            alpha = TIFFGetA(raster[c]);
+        }
+    }
+
+    //Calculate image's color averages
+    uint32 redAvg, blueAvg, greenAvg;
+
+    redAvg = red / npixels;
+    blueAvg = blue / npixels;
+    greenAvg = green / npixels;
+
+    cout << "Image: " << imagePath << endl;
+    cout << "Average Red: " << redAvg << endl;
+    cout << "Average Blue: " << blueAvg << endl;
+    cout << "Average Green: " << greenAvg << endl;
+    cout << "Alpha: " << alpha << endl;
+    
+    
+/* Haven't been able to complete the following code yet...
+
+    //Create complement image
+    TIFF* newTif = TIFFOpen("C:/images/002222-012515185003-Cam1(Complement).tif", "w");
+    uint32 newRed, newGreen, newBlue, newAlpha;
+    newAlpha = 255 - alpha;
+    uint32* newRaster;
+    newRaster = (uint32 *)_TIFFmalloc(npixels *sizeof(uint32));
+    char *image = new char [width*height*samplesPerPixel];  // Saw this in a tutorial but what is is used for?
+
+    //Set the image's tags
+    TIFFSetField(newTif, TIFFTAG_IMAGEWIDTH, width);
+    TIFFSetField(newTif, TIFFTAG_IMAGELENGTH, height);
+    TIFFSetField(newTif, TIFFTAG_SAMPLESPERPIXEL, samplesPerPixel);   // set number of channels per pixel
+    TIFFSetField(newTif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);    // set the size of the channels
+    TIFFSetField(newTif, TIFFTAG_ORIENTATION, ORIENTATION_BOTLEFT);    // set the origin of the image.
+    TIFFSetField(newTif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(newTif, TIFFTAG_PHOTOMETRIC, photometricSetting);  // Was originally set to 'PHOTOMETRIC_RGB' instead of 'photometricSetting'
+
+    //Invert color values and write to new image file
+    for (e = height - 1; e != -1; e--)
+    {
+        for (c = 0; c < width; c++)
+        {
+            red = TIFFGetR(raster[c]);
+            newRed = 255 - red;
+            green = TIFFGetG(raster[c]);
+            newGreen = 255 - green;
+            blue = TIFFGetB(raster[c]);
+            newBlue = 255 - blue;
+            // ...Then do what?
+        }
+    }
+*/
+
+    //Free up the memory and close the image
+    _TIFFfree(raster);
+
+    TIFFClose(tif);
+    //TIFFClose(newTif);
+
+    return 0;
+}
