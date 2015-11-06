@@ -69,8 +69,8 @@ int main()
 
     //Create complement image
     TIFF* newTif = TIFFOpen("C:/images/002222-012515185003-Cam1(Complement).tif", "w");
-    uint32 newRed, newGreen, newBlue, newAlpha;
-    newAlpha = 255 - alpha;
+    uint32 newRed, newGreen, newBlue;
+    // Use same alpha values as original image.
     uint32* newRaster;
     newRaster = (uint32 *)_TIFFmalloc(npixels *sizeof(uint32));
     char *image = new char [width*height*samplesPerPixel];  // Saw this in a tutorial but what is is used for?
