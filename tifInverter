@@ -98,7 +98,25 @@ int main()
             // ...Then do what?
         }
     }
-*/
+    
+	tsize_t linebytes = samplesPerPixel * width;	// length in memory of one row of pixel in the image.
+	unsigned char *buffer = NULL					// buffer used to store the row of pixel information for writing to file
+	// Allocating memory to store the pixels of current row
+	if (TIFFScanlineSize(newTif)linebytes)
+		buffer =(unsigned char *)_TIFFmalloc(linebytes);
+	else
+		buffer = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(newTif));
+
+	// We set the strip size of the file to be size of one row of pixels
+	TIFFSetField(newTif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(newTif, width*samplesPerPixel));
+
+	// Now writing image to the file one strip at a time
+	for (uint32 row = 0; row < height; row++)
+	{
+		memcpy(buffer, &image[(height - row - 1)*linebytes], linebytes);
+		if (TIFFWriteScanline(newTif, buffer, row, 0) < 0)
+		break;
+	}
 
     //Free up the memory and close the image
     _TIFFfree(raster);
